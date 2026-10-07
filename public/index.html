@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trade check · futures plan tester</title>
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#F1F4F3; --surface:#FFFFFF; --surface-2:#E8EEEE; --ink:#13202B; --muted:#566774; --line:#D2DBDD;
+  --brand:#0E6B73;
+  --ok:#0B7A5E; --ok-bg:#D9F0E7;
+  --warn:#9A5F00; --warn-bg:#FAEAC8;
+  --bad:#BE3A2D; --bad-bg:#F8DCD7;
+  --font-display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --font-ui:'IBM Plex Sans','Segoe UI',system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1720; --surface:#14222D; --surface-2:#1B2D3B; --ink:#E6EDF2; --muted:#93A6B5; --line:#273B4A;
+    --brand:#5CC7CF;
+    --ok:#5FD3A8; --ok-bg:#12372D;
+    --warn:#F0B84B; --warn-bg:#3A2D10;
+    --bad:#FF8E7E; --bad-bg:#40201C;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1720; --surface:#14222D; --surface-2:#1B2D3B; --ink:#E6EDF2; --muted:#93A6B5; --line:#273B4A;
+  --brand:#5CC7CF;
+  --ok:#5FD3A8; --ok-bg:#12372D;
+  --warn:#F0B84B; --warn-bg:#3A2D10;
+  --bad:#FF8E7E; --bad-bg:#40201C;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:15px;line-height:1.5;font-variant-numeric:tabular-nums;-webkit-text-size-adjust:100%}
+h1,h2,h3{font-family:var(--font-display);margin:0;font-weight:650;letter-spacing:-.01em}
+p{margin:0}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.app{max-width:1200px;margin:0 auto;padding:22px 16px 48px}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.top h1{font-size:28px;line-height:1.1}
+.top .sub{color:var(--muted);font-size:14px;margin-top:4px}
+.ctrls{display:flex;flex-wrap:wrap;gap:10px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;padding:3px;background:var(--surface-2)}
+.seg button{border:0;background:transparent;padding:7px 14px;border-radius:7px;color:var(--muted);font-weight:500;cursor:pointer;min-height:36px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.seg.full{display:flex}
+.seg.full button{flex:1}
+
+/* data strip */
+.datastrip{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:20px;font-size:13.5px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.datastrip .ds-group{display:flex;flex-wrap:wrap;gap:8px}
+.datastrip .stamp{color:var(--muted);margin-left:auto}
+.datastrip details{flex-basis:100%}
+.datastrip summary{cursor:pointer;color:var(--brand)}
+.datastrip details p{margin-top:6px;color:var(--muted)}
+.mini-btn{border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:13px;min-height:30px}
+.mini-btn:disabled{opacity:.55;cursor:default}
+
+/* layout */
+.grid{display:grid;grid-template-columns:minmax(300px,370px) minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+body[data-mode="simple"] .pro-only{display:none !important}
+body[data-mode="pro"] .simple-only{display:none !important}
+body[data-mode="simple"] #mmrField:not(.need){display:none}
+
+/* plan form */
+.plan{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px}
+.plan h2{font-size:18px;margin-bottom:14px}
+.field{margin:0 0 16px}
+.field>label,.field>.lbl{display:block;font-size:13.5px;font-weight:500;margin-bottom:6px}
+.hint{font-size:12.5px;color:var(--muted);margin-top:5px}
+.inp{position:relative}
+.inp input,.inp select,.field select,.field>input[type=text]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);min-height:44px;font-size:16px}
+.inp input{padding-right:58px}
+.inp .unit{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none}
+.field select{padding-right:12px}
+.field>input[type=text]{margin-top:8px;text-transform:uppercase}
+.field>input[type=text][hidden]{display:none}
+input[type=range]{width:100%;margin:10px 0 0;accent-color:var(--brand)}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sec-title{font-size:13px;font-weight:600;color:var(--muted);margin:20px 0 12px;padding-top:16px;border-top:1px solid var(--line)}
+.chip-btn{margin-top:8px;border:1px solid var(--brand);color:var(--brand);background:transparent;border-radius:99px;padding:5px 12px;font-size:13px;cursor:pointer;min-height:32px}
+.chip-btn:hover{background:var(--surface-2)}
+.chip-btn[hidden]{display:none}
+.link-btn{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:13px;padding:6px 0}
+#mmrField.need .inp input{border-color:var(--bad)}
+#mmrField.need .hint{color:var(--bad)}
+
+/* verdict */
+.verdict{border:1px solid;border-radius:14px;padding:22px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:22px 30px;margin-bottom:22px}
+@media (max-width:700px){.verdict{grid-template-columns:1fr}}
+.verdict.s-ok{background:var(--ok-bg);border-color:var(--ok)}
+.verdict.s-warn{background:var(--warn-bg);border-color:var(--warn)}
+.verdict.s-bad{background:var(--bad-bg);border-color:var(--bad)}
+.verdict.s-idle{background:var(--surface);border-color:var(--line)}
+.verdict h2{font-size:30px;line-height:1.1;margin-bottom:10px}
+.verdict .lead{font-size:15.5px}
+.verdict .fine{font-size:13px;color:var(--muted);margin-top:12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:14px 22px;margin:0;align-content:start}
+.stats dt{font-size:12.5px;color:var(--muted)}
+.stats dd{margin:2px 0 0;font-size:20px;font-weight:600}
+.stats dd small{font-size:12.5px;font-weight:400;color:var(--muted)}
+
+/* panels */
+.row2{display:grid;grid-template-columns:minmax(260px,380px) minmax(0,1fr);gap:26px;margin-bottom:26px}
+@media (max-width:760px){.row2{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.panel h2{font-size:17px;margin-bottom:4px}
+.panel .cap{font-size:13px;color:var(--muted);margin-bottom:10px}
+.ladder svg{display:block;width:100%;height:auto;max-width:420px;margin:0 auto}
+.ladder text{font-family:var(--font-ui)}
+.empty{color:var(--muted);font-size:14px;padding:30px 0;text-align:center}
+
+/* checks */
+.checks{list-style:none;margin:0;padding:0}
+.check{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:2px 12px;padding:14px 0;border-top:1px solid var(--line)}
+.check:first-child{border-top:0;padding-top:4px}
+.ico{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;margin-top:1px}
+.ico svg{width:15px;height:15px}
+.s-ok .ico{background:var(--ok-bg);color:var(--ok)}
+.s-warn .ico{background:var(--warn-bg);color:var(--warn)}
+.s-bad .ico{background:var(--bad-bg);color:var(--bad)}
+.check h3{font-size:15px;font-family:var(--font-ui);font-weight:600;letter-spacing:0}
+.check .tag{font-size:12px;font-weight:600;margin-left:8px}
+.check.s-ok .tag{color:var(--ok)}.check.s-warn .tag{color:var(--warn)}.check.s-bad .tag{color:var(--bad)}
+.check .msg{font-size:14px;color:var(--ink);opacity:.88;grid-column:2}
+.check .val{grid-column:3;grid-row:1;font-size:13px;color:var(--muted);text-align:right;white-space:nowrap}
+.check details{grid-column:2;margin-top:4px}
+.check summary{cursor:pointer;font-size:13px;color:var(--brand)}
+.check details p{font-size:13.5px;color:var(--muted);margin-top:6px}
+
+/* compare table */
+.scroll{overflow-x:auto}
+table.cmp{width:100%;border-collapse:collapse;min-width:420px}
+.cmp th,.cmp td{padding:10px 12px;text-align:right;border-top:1px solid var(--line);font-size:14px}
+.cmp th:first-child,.cmp td:first-child{text-align:left;color:var(--muted);font-weight:400}
+.cmp thead th{border-top:0;font-weight:600}
+.cmp thead button{background:none;border:0;cursor:pointer;font-weight:600;padding:2px 0;color:var(--ink);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.cmp .sel{background:var(--surface-2)}
+.cmp thead .sel button{text-decoration-color:var(--brand)}
+.formulas{margin-top:12px;font-size:13px;color:var(--muted)}
+.formulas summary{cursor:pointer;color:var(--brand)}
+.formulas code{display:block;margin:6px 0;padding:8px 10px;background:var(--surface-2);border-radius:8px;color:var(--ink);font-size:12.5px;white-space:normal;font-family:var(--font-ui)}
+
+/* events */
+.evhead{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12.5px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.badge.demo{border-color:var(--warn);color:var(--warn)}
+.badge.live{border-color:var(--ok);color:var(--ok)}
+.badge.hi{border-color:var(--bad);color:var(--bad)}
+.badge.md{border-color:var(--warn);color:var(--warn)}
+.badge.in{background:var(--warn-bg);border-color:var(--warn);color:var(--warn)}
+.tl{position:relative;height:56px;margin:14px 4px 8px}
+.tl .track{position:absolute;left:0;right:0;top:20px;height:6px;border-radius:3px;background:var(--surface-2)}
+.tl .hold{position:absolute;left:0;top:20px;height:6px;border-radius:3px 0 0 3px;background:var(--brand);opacity:.55}
+.tl .dot{position:absolute;top:14px;width:18px;height:18px;margin-left:-9px;border-radius:50%;border:2px solid var(--surface);background:var(--warn)}
+.tl .dot.hi{background:var(--bad);top:12px;width:22px;height:22px;margin-left:-11px}
+.tl .tick{position:absolute;top:34px;font-size:12px;color:var(--muted);transform:translateX(-50%);white-space:nowrap}
+.tl .tick.now{left:0;transform:none}
+.evlist{list-style:none;margin:0;padding:0}
+.ev{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;padding:12px 0;border-top:1px solid var(--line)}
+.ev:first-child{border-top:0}
+.ev .n{font-weight:600}
+.ev .meta{font-size:13px;color:var(--muted)}
+.ev .when{text-align:right;font-weight:600;white-space:nowrap}
+
+.watchbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:-8px 0 18px}
+.watchbar:empty{display:none}
+.alerts{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 14px;margin:0 0 20px}
+.alerts[hidden]{display:none}
+.alerts ul{list-style:none;margin:0;padding:0}
+.al{display:flex;justify-content:space-between;gap:12px;padding:8px 0 8px 12px;border-left:4px solid var(--line);margin:6px 0;font-size:14px}
+.al time{color:var(--muted);font-size:12.5px;white-space:nowrap}
+.al-bad{border-left-color:var(--bad)}.al-warn,.al-event,.al-health{border-left-color:var(--warn)}.al-ok{border-left-color:var(--ok)}
+.warn-text{color:var(--warn)}
+.panel[hidden]{display:none}
+.note{font-size:13px;color:var(--muted);margin-top:22px}
+.note p+p{margin-top:8px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion:no-preference){.verdict{transition:background-color .2s,border-color .2s}}
+</style>
+</head>
+<body data-mode="simple">
+<div class="app">
+  <header class="top">
+    <div>
+      <h1>Trade check</h1>
+      <p class="sub">Test a futures plan before you place it.</p>
+    </div>
+    <div class="ctrls">
+      <div class="seg" role="group" aria-label="Exchange" id="exSeg">
+        <button type="button" data-ex="binance" aria-pressed="true">Binance</button>
+        <button type="button" data-ex="bybit" aria-pressed="false">Bybit</button>
+        <button type="button" data-ex="okx" aria-pressed="false">OKX</button>
+      </div>
+      <div class="seg" role="group" aria-label="View mode" id="modeSeg">
+        <button type="button" data-mode="simple" aria-pressed="true">Simple</button>
+        <button type="button" data-mode="pro" aria-pressed="false">Pro</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="datastrip" id="dataStrip" aria-live="polite"></div>
+
+  <div class="grid">
+    <!-- PLAN -->
+    <section class="plan" aria-labelledby="planH">
+      <h2 id="planH">Your plan</h2>
+
+      <div class="field">
+        <label for="coin">Coin</label>
+        <select id="coin">
+          <option value="BTC">Bitcoin (BTC)</option>
+          <option value="ETH">Ethereum (ETH)</option>
+          <option value="SOL">Solana (SOL)</option>
+          <option value="XRP">XRP</option>
+          <option value="DOGE">Dogecoin (DOGE)</option>
+          <option value="BNB">BNB</option>
+          <option value="HYPE">Hyperliquid (HYPE)</option>
+          <option value="OTHER">Other coin…</option>
+        </select>
+        <input id="coinOther" type="text" maxlength="12" placeholder="Symbol, e.g. ARB" aria-label="Other coin symbol" hidden>
+        <p class="hint">USDT-margined perpetual contracts.</p>
+      </div>
+
+      <div class="field">
+        <span class="lbl" id="dirLbl">Direction</span>
+        <div class="seg full" role="group" aria-labelledby="dirLbl" id="dirSeg">
+          <button type="button" data-dir="long" aria-pressed="true">Long (price goes up)</button>
+          <button type="button" data-dir="short" aria-pressed="false">Short (price goes down)</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="balance">Account balance</label>
+        <div class="inp"><input id="balance" type="number" inputmode="decimal" step="any" min="0"><span class="unit">USDT</span></div>
+      </div>
+
+      <div class="field">
+        <label for="riskPct">Risk per trade</label>
+        <div class="inp"><input id="riskPct" type="number" inputmode="decimal" step="0.25" min="0"><span class="unit">%</span></div>
+        <input id="riskRange" type="range" min="0.25" max="10" step="0.25" aria-label="Risk per trade slider">
+        <p class="hint">How much of your balance you accept losing if your stop-loss is hit.</p>
+      </div>
+
+      <div class="field">
+        <label for="entry">Entry price</label>
+        <div class="inp"><input id="entry" type="number" inputmode="decimal" step="any" min="0"><span class="unit">USDT</span></div>
+        <button type="button" class="chip-btn" id="markBtn" hidden></button>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label for="stop">Stop-loss</label>
+          <div class="inp"><input id="stop" type="number" inputmode="decimal" step="any" min="0"><span class="unit">USDT</span></div>
+        </div>
+        <div class="field">
+          <label for="tp">Take-profit</label>
+          <div class="inp"><input id="tp" type="number" inputmode="decimal" step="any" min="0"><span class="unit">USDT</span></div>
+        </div>
+      </div>
+      <p class="hint simple-only" style="margin:-8px 0 16px">The stop-loss closes the trade at a loss you chose. The take-profit closes it at a gain.</p>
+
+      <div class="field">
+        <label for="lev">Leverage</label>
+        <div class="inp"><input id="lev" type="number" inputmode="decimal" step="1" min="1" max="125"><span class="unit">×</span></div>
+        <input id="levRange" type="range" min="1" max="100" step="1" aria-label="Leverage slider">
+        <button type="button" class="chip-btn" id="sugBtn" hidden></button>
+        <p class="hint" id="sugHint"></p>
+      </div>
+
+      <div class="field" id="mmrField">
+        <label for="mmr">Maintenance margin rate</label>
+        <div class="inp"><input id="mmr" type="number" inputmode="decimal" step="any" min="0"><span class="unit">%</span></div>
+        <p class="hint" id="mmrHint"></p>
+        <div class="pro-only" style="margin-top:12px">
+          <label for="mmrCum" style="display:block;font-size:13.5px;font-weight:500;margin-bottom:6px">Maintenance amount (deduction)</label>
+          <div class="inp"><input id="mmrCum" type="number" inputmode="decimal" step="any" min="0"><span class="unit">USDT</span></div>
+          <p class="hint">Binance and Bybit tiers above the first have a fixed deduction. Leave blank for the first tier.</p>
+        </div>
+      </div>
+
+      <div class="field simple-only">
+        <label for="holdSel">How long will you hold it?</label>
+        <select id="holdSel"></select>
+        <p class="hint">Used to check for big events and funding costs while you're in the trade.</p>
+      </div>
+
+      <div class="pro-only">
+        <p class="sec-title">Advanced</p>
+        <div class="field">
+          <label for="holdNum">Expected holding time</label>
+          <div class="inp"><input id="holdNum" type="number" inputmode="decimal" step="any" min="0"><span class="unit">hours</span></div>
+        </div>
+        <div class="field">
+          <label for="funding">Funding rate (per 8 hours)</label>
+          <div class="inp"><input id="funding" type="number" inputmode="decimal" step="any"><span class="unit">%</span></div>
+          <p class="hint" id="fundHint"></p>
+        </div>
+        <div class="field">
+          <label for="order">Order types for entry and take-profit</label>
+          <select id="order">
+            <option value="market">Market orders (taker fees)</option>
+            <option value="limit">Limit orders (maker fees)</option>
+          </select>
+          <p class="hint">Stop-loss exits are always priced as taker.</p>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label for="takerFee">Taker fee</label>
+            <div class="inp"><input id="takerFee" type="number" inputmode="decimal" step="any" min="0"><span class="unit">%</span></div>
+          </div>
+          <div class="field">
+            <label for="makerFee">Maker fee</label>
+            <div class="inp"><input id="makerFee" type="number" inputmode="decimal" step="any" min="0"><span class="unit">%</span></div>
+          </div>
+        </div>
+        <p class="hint" style="margin:-8px 0 8px">These are the published regular-tier rates (checked September 2026). Your account may pay less (VIP tier, token discounts), so change them to match.</p>
+      </div>
+
+      <button type="button" class="link-btn" id="resetBtn">Clear plan</button>
+    </section>
+
+    <!-- RESULTS -->
+    <section aria-label="Results">
+      <div id="verdict" class="verdict s-idle" aria-live="polite"></div>
+      <div id="watchBar" class="watchbar"></div>
+      <div id="alerts" class="alerts" hidden aria-live="assertive"></div>
+
+      <div class="row2">
+        <div class="panel ladder">
+          <h2>Price ladder</h2>
+          <p class="cap">Where each price sits, and how far you are from liquidation.</p>
+          <div id="ladder"></div>
+        </div>
+        <div class="panel">
+          <h2>Checks</h2>
+          <p class="cap">Most important first.</p>
+          <ol class="checks" id="checks"></ol>
+        </div>
+      </div>
+
+      <div class="panel" id="contextPanel" hidden style="margin-bottom:26px">
+        <h2>Live market</h2>
+        <p class="cap">Straight from each exchange, refreshed automatically. The age shows how old each number is.</p>
+        <div id="context"></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:26px">
+        <h2>Same plan on each exchange</h2>
+        <p class="cap">Liquidation differs because each exchange uses its own margin formula and tiers.</p>
+        <div class="scroll"><div id="compare"></div></div>
+        <details class="formulas pro-only">
+          <summary>How liquidation is calculated</summary>
+          <p style="margin-top:8px">Isolated margin, one-way mode. side = +1 for long, −1 for short. These follow each exchange's published help-center formulas.</p>
+          <code>Binance USDⓈ-M: LP = (margin + maintenance amount − side × qty × entry) ÷ (qty × (MMR − side))</code>
+          <code>Bybit USDT perpetual: LP = entry − side × (initial margin − maintenance margin) ÷ qty, with maintenance margin = notional × MMR − deduction</code>
+          <code>OKX USDT-margined: LP = (margin − side × qty × entry) ÷ (qty × (MMR + fee rate − side))</code>
+        </details>
+      </div>
+
+      <div class="panel">
+        <div class="evhead">
+          <h2>Upcoming events</h2>
+          <span class="badge live">Official schedule</span>
+        </div>
+        <p class="cap">US inflation, jobs and Fed releases, with dates and times as published. Impact labels are our own. Crypto-specific events such as token unlocks are not included.</p>
+        <div id="events"></div>
+      </div>
+
+      <div class="note">
+        <p>This tool checks the maths and timing of your plan. It does not predict where price will go and is not financial advice.</p>
+        <p>Limits: isolated margin only. Nothing in this tool is pre-filled with sample values: rates and prices come from live exchange data or from you. Jobs and PCE dates come from sites that mirror the BLS and BEA calendars, so confirm them on bls.gov and bea.gov. Liquidation prices are estimates, so confirm on the exchange before trading.</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- exchanges ---------- */
+var EX = { binance:{name:'Binance'}, bybit:{name:'Bybit'}, okx:{name:'OKX'} };
+var EXKEYS = ['binance','bybit','okx'];
+
+/*
+ * Published regular-tier futures fees (percent), checked against several fee guides dated September 2026.
+ * Your own account rate can differ (VIP tier, token discounts), so these are editable.
+ */
+var PUBLISHED_FEES = {
+  binance:{maker:0.02, taker:0.05},
+  bybit:{maker:0.02, taker:0.055},
+  okx:{maker:0.02, taker:0.05}
+};
+
+/*
+ * Official scheduled US releases. Dates and times are exactly as published; nothing is estimated.
+ * Sources: BLS CPI schedule (bls.gov/schedule/news_release/cpi.htm), Federal Reserve FOMC calendar,
+ * Reuters Fed events list (minutes), BLS and BEA calendars as mirrored by secondary sites (jobs, PCE).
+ * Impact labels are our own classification. Schedule checked 6 Oct 2026; covers through 10 Dec 2026.
+ */
+var EVENT_INFO = {mode:'built-in', sources:null, needsUpdate:false, daysLeft:null};
+var EVENTS = [
+  {n:'FOMC minutes (September meeting)', cat:'Fed', kind:'fomc-minutes', t:'2026-10-07T14:00:00-04:00', imp:'Medium'},
+  {n:'US CPI inflation (September data)', cat:'Inflation', kind:'cpi', t:'2026-10-14T08:30:00-04:00', imp:'High'},
+  {n:'FOMC interest rate decision', cat:'Fed', kind:'fomc', t:'2026-10-28T14:00:00-04:00', imp:'High'},
+  {n:'US PCE inflation (September data)', cat:'Inflation', kind:'pce', t:'2026-11-04T08:30:00-05:00', imp:'Medium'},
+  {n:'US jobs report (October data)', cat:'Jobs', kind:'jobs', t:'2026-11-06T08:30:00-05:00', imp:'High'},
+  {n:'US CPI inflation (October data)', cat:'Inflation', kind:'cpi', t:'2026-11-10T08:30:00-05:00', imp:'High'},
+  {n:'FOMC minutes (October meeting)', cat:'Fed', kind:'fomc-minutes', t:'2026-11-18T14:00:00-05:00', imp:'Medium'},
+  {n:'US PCE inflation (October data)', cat:'Inflation', kind:'pce', t:'2026-12-02T08:30:00-05:00', imp:'Medium'},
+  {n:'US jobs report (November data)', cat:'Jobs', kind:'jobs', t:'2026-12-04T08:30:00-05:00', imp:'High'},
+  {n:'FOMC rate decision and projections', cat:'Fed', kind:'fomc', t:'2026-12-09T14:00:00-05:00', imp:'High'},
+  {n:'US CPI inflation (November data)', cat:'Inflation', kind:'cpi', t:'2026-12-10T08:30:00-05:00', imp:'High'}
+].map(function(e){ e.at=Date.parse(e.t); e.src='built-in'; return e; });
+function scheduleEnd(){ return EVENTS.reduce(function(m,e){return Math.max(m,e.at);},0); }
+var H = 3600e3;
+
+/* ---------- state (no example values) ---------- */
+var BLANK = {
+  ex:'binance', mode:'simple', dir:'long', coin:'BTC', coinOther:'',
+  balance:'', riskPct:'', entry:'', stop:'', tp:'', lev:'',
+  hold:'', funding:'', fundingTouched:false, order:'market',
+  mmrBy:{binance:{rate:'',cum:''}, bybit:{rate:'',cum:''}, okx:{rate:'',cum:''}},
+  fees:{binance:{maker:0.02,taker:0.05}, bybit:{maker:0.02,taker:0.055}, okx:{maker:0.02,taker:0.05}}
+};
+function clone(o){return JSON.parse(JSON.stringify(o));}
+var S = load();
+S.autoPrices = false;
+function load(){
+  var base = clone(BLANK);
+  try{
+    var j = JSON.parse(localStorage.getItem('tradecheck:v3')||'null');
+    if(j && typeof j==='object'){
+      for(var k in j){ if(k!=='fees' && k!=='mmrBy' && k!=='autoPrices') base[k]=j[k]; }
+      EXKEYS.forEach(function(e){
+        if(j.fees && j.fees[e]) base.fees[e]=j.fees[e];
+        if(j.mmrBy && j.mmrBy[e]) base.mmrBy[e]=j.mmrBy[e];
+      });
+    }
+  }catch(e){}
+  return base;
+}
+function save(){ try{ localStorage.setItem('tradecheck:v3', JSON.stringify(S)); }catch(e){} }
+
+/* ---------- helpers ---------- */
+function $(id){return document.getElementById(id);}
+/* every piece of text that came from outside this page goes through esc() before it is shown */
+function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function num(v){var n=parseFloat(v);return isFinite(n)?n:NaN;}
+function nf(n,d){ if(d==null)d=2; return isFinite(n)?n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'—'; }
+function px(n){
+  if(!isFinite(n)) return '—';
+  var a=Math.abs(n), d=a>=1000?2:a>=1?3:a>=0.01?5:7;
+  return n.toLocaleString('en-US',{minimumFractionDigits:Math.min(d,2),maximumFractionDigits:d});
+}
+function qf(q){ return q>=100?nf(q,2):q>=1?nf(q,3):q>=0.01?nf(q,4):nf(q,6); }
+function usd(n){ return '$'+nf(Math.abs(n)); }
+function sgnPct(n){ return (n>=0?'+':'−')+nf(Math.abs(n),1)+'%'; }
+function roundPx(p){ return Number(p.toPrecision(5)); }
+function z2(x){return (x<10?'0':'')+x;}
+function hhmmss(t){ var d=new Date(t); return z2(d.getHours())+':'+z2(d.getMinutes())+':'+z2(d.getSeconds()); }
+function dur(ms){
+  var m=Math.max(0,Math.round(ms/60000));
+  if(m<60) return m+' min';
+  var h=Math.floor(m/60), mm=m%60;
+  if(h<48) return h+'h '+z2(mm)+'m';
+  return Math.round(h/24)+' days';
+}
+function whenStr(t){
+  return new Date(t).toLocaleString(undefined,{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+}
+function coinSym(){
+  return S.coin==='OTHER' ? String(S.coinOther||'').toUpperCase().replace(/[^A-Z0-9]/g,'') : S.coin;
+}
+
+/* ---------- live data layer ---------- */
+var API = {online:null, binanceTiers:false, degraded:[], mode:'none'};
+var DATA = {};      /* key: ex|COIN -> latest slot from the server */
+var SPREAD = {};    /* COIN -> {pct, mismatch} */
+var MARKET_STALE = 45e3, TIERS_STALE = 3*3600e3;
+var es = null, esCoin = '', pollTimer = null, lastRefresh = 0;
+
+function fetchJSON(url, ms){
+  var ctl = (typeof AbortController!=='undefined') ? new AbortController() : null;
+  var t = setTimeout(function(){ if(ctl) ctl.abort(); }, ms||6000);
+  return fetch(url, {signal: ctl?ctl.signal:undefined, cache:'no-store'}).then(function(r){
+    clearTimeout(t);
+    var ct = r.headers.get('content-type')||'';
+    if(!r.ok || ct.indexOf('json')<0) throw new Error('bad response');
+    return r.json();
+  }).catch(function(e){ clearTimeout(t); throw e; });
+}
+function probe(){
+  return fetchJSON('api/health', 3000).then(function(j){
+    API.online = !!(j && j.ok); API.binanceTiers = !!(j && j.binanceTiers); API.degraded = (j && j.degraded) || [];
+  }).catch(function(){ API.online = false; });
+}
+function fixTiers(t){
+  /* JSON turns Infinity into null; restore it. */
+  return t.map(function(x){ return {cap:(x.cap==null?Infinity:x.cap), mmr:x.mmr, cum:x.cum||0, maxLev:x.maxLev}; });
+}
+function ingestCoin(p){
+  var coin=p.coin, now=Date.now();
+  EXKEYS.forEach(function(ex){
+    var x=p.exchanges && p.exchanges[ex]; if(!x) return;
+    DATA[ex+'|'+coin]={ex:ex, coin:coin, market:x.market, tiers:x.tiers, errors:x.errors||{}, flags:x.flags||[],
+      marketAgeMs:x.marketAgeMs, tiersAgeMs:x.tiersAgeMs, receivedAt:now, attempted:x.attempted||{}};
+  });
+  SPREAD[coin]=p.spread||{};
+  lastRefresh=now;
+  if(coin===coinSym()){ applyLive(); update(); }
+}
+function ingestEvents(ev){
+  if(!ev || !ev.list || !ev.list.length) return;
+  EVENTS = ev.list.map(function(e){ return {n:e.n, cat:e.cat, kind:e.kind, imp:e.imp, at:e.at, src:e.src}; });
+  EVENT_INFO = {mode:'server', sources:ev.sources, needsUpdate:!!ev.needsUpdate, daysLeft:ev.daysLeft};
+  update();
+}
+/* age of a number in ms, counted from when the server last refreshed it */
+function ageOf(d, kind){
+  if(!d) return null;
+  var a = kind==='market' ? d.marketAgeMs : d.tiersAgeMs;
+  return a==null ? null : a + (Date.now()-d.receivedAt);
+}
+function marketFresh(ex){ var d=dd(ex), a=ageOf(d,'market'); return !!(d && d.market && a!=null && a<=MARKET_STALE); }
+function ago(ms){
+  if(ms==null) return 'never';
+  var s=Math.round(ms/1000);
+  if(s<60) return s+'s ago'; var m=Math.round(s/60); if(m<60) return m+' min ago';
+  return Math.round(m/60)+'h ago';
+}
+
+function closeStream(){ if(es){ es.close(); es=null; } esCoin=''; }
+function stopPolling(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } }
+function startPolling(){
+  if(pollTimer) return;
+  API.mode='poll';
+  var tick=function(){ var c=coinSym(); if(!/^[A-Z0-9]{2,12}$/.test(c)) return;
+    fetchJSON('api/coin?coin='+c, 12000).then(ingestCoin).catch(function(){});
+    fetchJSON('api/events', 8000).then(ingestEvents).catch(function(){}); };
+  tick(); pollTimer=setInterval(tick, 15000);
+}
+function openStream(){
+  var c=coinSym();
+  if(!API.online || !/^[A-Z0-9]{2,12}$/.test(c)) return;
+  if(es && esCoin===c) return;
+  closeStream();
+  if(typeof EventSource==='undefined'){ startPolling(); return; }
+  esCoin=c; es=new EventSource('api/stream?coin='+c);
+  es.addEventListener('coin', function(e){ try{ ingestCoin(JSON.parse(e.data)); }catch(x){} });
+  es.addEventListener('events', function(e){ try{ ingestEvents(JSON.parse(e.data)); }catch(x){} });
+  es.addEventListener('health', function(e){ try{ var h=JSON.parse(e.data); API.degraded=h.degraded||[]; API.binanceTiers=!!h.binanceTiers; renderStrip(); }catch(x){} });
+  es.addEventListener('alert', function(e){ try{ pushAlert(JSON.parse(e.data)); }catch(x){} });
+  es.onopen=function(){ API.mode='stream'; stopPolling(); renderStrip(); };
+  es.onerror=function(){ API.mode='reconnecting'; renderStrip(); if(es && es.readyState===2) startPolling(); };
+}
+function refreshData(manual){
+  var c=coinSym();
+  if(!API.online || !/^[A-Z0-9]{2,12}$/.test(c)){ applyLive(); update(); return Promise.resolve(); }
+  openStream();
+  if(manual) return fetchJSON('api/coin?coin='+c, 12000).then(ingestCoin).catch(function(){});
+  return Promise.resolve();
+}
+function mk(ex){ var d=DATA[ex+'|'+coinSym()]; return d && d.market ? d.market : null; }
+function dd(ex){ return DATA[ex+'|'+coinSym()] || null; }
+
+function setPrices(mark){
+  var side = S.dir==='long'?1:-1;
+  S.entry = roundPx(mark); S.stop = roundPx(mark*(1-0.02*side)); S.tp = roundPx(mark*(1+0.06*side));
+  $('entry').value=S.entry; $('stop').value=S.stop; $('tp').value=S.tp;
+}
+function applyLive(){
+  var m = marketFresh(S.ex) ? mk(S.ex) : null;
+  if(m && isFinite(m.funding) && !S.fundingTouched){ S.funding = Number(m.funding.toFixed(4)); $('funding').value=S.funding; }
+  if(S.autoPrices){
+    if(m && m.mark>0){ setPrices(m.mark); S.autoPrices=false; }
+    else if(!API.online || dd(S.ex)){ S.entry=''; S.stop=''; S.tp=''; $('entry').value=''; $('stop').value=''; $('tp').value=''; S.autoPrices=false; }
+  }
+}
+
+/* ---------- rates (live from the exchange, or typed by you; never assumed) ---------- */
+function override(ex){
+  var o=S.mmrBy[ex]||{}, r=num(o.rate);
+  return r>0 ? {rate:r, cum:num(o.cum)||0} : null;
+}
+function tierSet(ex){
+  var d = dd(ex);
+  if(d && d.tiers && d.tiers.tiers && d.tiers.tiers.length){
+    return {unit:d.tiers.unit, tiers:fixTiers(d.tiers.tiers), ageMs:ageOf(d,'tiers'), note:d.tiers.unitNote||''};
+  }
+  return null;
+}
+function hasRates(ex){ return !!(override(ex) || tierSet(ex)); }
+/* returns null when no real rate is available */
+function tierFor(ex, qty, notional){
+  var o=override(ex);
+  if(o) return {mmr:o.rate/100, cum:o.cum, src:'custom', maxLev:NaN};
+  var ts=tierSet(ex); if(!ts) return null;
+  var arr=ts.tiers, v=(ts.unit==='qty')?qty:notional;
+  for(var i=0;i<arr.length;i++){ if(v<=arr[i].cap) return {mmr:arr[i].mmr, cum:arr[i].cum||0, src:'live', maxLev:arr[i].maxLev}; }
+  var l=arr[arr.length-1]; return {mmr:l.mmr, cum:l.cum||0, src:'live', maxLev:l.maxLev};
+}
+
+/* ---------- liquidation maths ---------- */
+function liq(ex, side, E, qty, lev, takerPct){
+  var notional=qty*E, margin=notional/lev;
+  var t=tierFor(ex, qty, notional), lp;
+  if(!t) return {missing:true, none:true, immediate:false, src:'missing', price:NaN, mmr:NaN, maxLev:NaN};
+  if(ex==='binance'){
+    for(var i=0;i<3;i++){
+      lp=(margin+t.cum-side*qty*E)/(qty*(t.mmr-side));
+      if(!(lp>0)) break;
+      var t2=tierFor(ex, qty, qty*lp);
+      if(!t2 || (t2.mmr===t.mmr && t2.cum===t.cum)) break;
+      t=t2;
+    }
+  } else if(ex==='bybit'){
+    var MM=notional*t.mmr-t.cum; lp=E-side*(margin-MM)/qty;
+  } else {
+    lp=(margin-side*qty*E)/(qty*(t.mmr+takerPct/100-side));
+  }
+  var none = side===1 ? !(lp>E*0.01) : !isFinite(lp);
+  /* the solved price lands on the wrong side of entry: margin is already below the maintenance requirement */
+  var immediate = !none && (side===1 ? lp>=E : lp<=E);
+  return {price:lp, mmr:t.mmr, src:t.src, maxLev:t.maxLev, none:none, missing:false, immediate:immediate};
+}
+
+/* ---------- main calculation ---------- */
+function calc(){
+  var side=S.dir==='long'?1:-1;
+  var E=num(S.entry), SL=num(S.stop), TP=num(S.tp), bal=num(S.balance),
+      riskPct=num(S.riskPct), lev=num(S.lev), hold=num(S.hold), fund=num(S.funding);
+  if(!coinSym()) return {valid:false, reason:'Type the symbol of the coin you want to trade.'};
+  if(!(E>0 && SL>0 && TP>0 && bal>0 && riskPct>0 && lev>=1 && hold>0)){
+    return {valid:false, reason:'Enter your balance, risk, prices, leverage and holding time to run the checks. Nothing is pre-filled, so every number comes from you or from live exchange data.'};
+  }
+  var issues=[];
+  if(!(side*(E-SL)>0)) issues.push('For a '+S.dir+', the stop-loss must be '+(side===1?'below':'above')+' your entry.');
+  if(!(side*(TP-E)>0)) issues.push('For a '+S.dir+', the take-profit must be '+(side===1?'above':'below')+' your entry.');
+  if(issues.length) return {valid:false, reason:issues.join(' ')};
+
+  var fees={};
+  EXKEYS.forEach(function(e){
+    var f=S.fees[e]||PUBLISHED_FEES[e];
+    fees[e]={maker:(num(f.maker)||0)/100, taker:(num(f.taker)||0)/100};
+  });
+  var fsel=fees[S.ex];
+  var entryRate = S.order==='market'?fsel.taker:fsel.maker;
+  var tpRate = S.order==='market'?fsel.taker:fsel.maker;
+  var stopRate = fsel.taker;
+
+  var d=Math.abs(E-SL);
+  var riskAmt=bal*riskPct/100;
+  var qty=riskAmt/(d+entryRate*E+stopRate*SL);
+  var notional=qty*E, margin=notional/lev;
+  var gainTP=qty*Math.abs(TP-E)-qty*(entryRate*E+tpRate*TP);
+  var rr=gainTP/riskAmt;
+  var stopPct=d/E*100, tpPct=side*(TP-E)/E*100;
+
+  var L={}, perEx={};
+  EXKEYS.forEach(function(e){
+    var er = S.order==='market'?fees[e].taker:fees[e].maker;
+    L[e]=liq(e, side, E, qty, lev, fees[e].taker*100);
+    perEx[e]={ fee:qty*(er*E+fees[e].taker*SL), taker:fees[e].taker };
+  });
+  var sel=L[S.ex];
+  var liqDist = (sel.none||sel.missing||sel.immediate)?Infinity:Math.abs(E-sel.price);
+  var ratio = liqDist/d;
+  var gap = (sel.none||sel.missing)?Infinity:(sel.immediate?-Infinity:side*(SL-sel.price));
+
+  var fundCost = isFinite(fund) ? side*notional*(fund/100)*(hold/8) : NaN;
+  var tier=tierFor(S.ex, qty, notional);
+  var maxLev=null, minLev=Math.ceil(notional/(0.5*bal)), sug=null;
+  if(tier){
+    maxLev=Math.floor(1/(2*stopPct/100+tier.mmr+fsel.taker));
+    if(isFinite(tier.maxLev)) maxLev=Math.min(maxLev, Math.floor(tier.maxLev));
+    if(maxLev>=1 && minLev<=maxLev){ sug=Math.max(minLev, Math.min(maxLev,25)); sug=Math.max(1,Math.min(sug,100)); }
+  }
+
+  return {valid:true, side:side, E:E, SL:SL, TP:TP, bal:bal, riskPct:riskPct, lev:lev, hold:hold,
+    d:d, riskAmt:riskAmt, qty:qty, notional:notional, margin:margin, marginPct:margin/bal*100,
+    gainTP:gainTP, rr:rr, stopPct:stopPct, tpPct:tpPct, liq:L, sel:sel, ratio:ratio, gap:gap,
+    fundCost:fundCost, fundRate:fund, perEx:perEx, maxLev:maxLev, minLev:minLev, sug:sug};
+}
+
+/* ---------- checks ---------- */
+function srcLabel(s){ return s==='live'?'Live':s==='custom'?'Your rate':'Not loaded'; }
+
+function evalChecks(r){
+  var out=[], now=Date.now(), exn=EX[S.ex].name, coin=coinSym(), c;
+
+  /* 1. rates */
+  var d=dd(S.ex);
+  c={id:'data', title:'Maintenance rates used'};
+  if(r.sel.src==='live'){
+    var tAge=ageOf(d,'tiers'), tStale=tAge!=null && tAge>TIERS_STALE;
+    c.s=tStale?'warn':'ok'; c.msg='Using live '+exn+' maintenance rates for '+coin+' (refreshed '+ago(tAge)+').';
+    if(tStale) c.msg+=' They should refresh every 30 minutes, so the server may be having trouble reaching '+exn+'. Confirm on the exchange.';
+    if(S.ex==='okx') c.msg+=' OKX tier sizes are assumed to be in contracts, so confirm against the exchange.';
+    c.val=tStale?'Stale':'Live';
+  } else if(r.sel.src==='custom'){
+    c.s='ok'; c.msg='Using the rate you entered. Make sure it matches '+exn+' for a position of this size.'; c.val='Your rate';
+  } else {
+    c.s='bad'; c.title='Liquidation can\'t be calculated yet';
+    c.msg='No maintenance rate is loaded for '+coin+' on '+exn+', so no liquidation price is shown. Enter the rate from '+exn+'\'s trading rules in the box on the left, or connect live data.';
+    if(API.online && d && d.errors && d.errors.tiers==='needs_api_key') c.msg+=' Binance only shares its rates with a signed API key; add a read-only key to the server for live rates. Bybit and OKX rates are live, so you can switch to either above.';
+    else if(API.online && d && d.errors && d.errors.tiers) c.msg+=' ('+exn+' said: '+d.errors.tiers+')';
+    c.val='Not loaded';
+  }
+  c.why='Each exchange sets a maintenance margin rate per coin and position size. Without the real rate, any liquidation price would be a guess, so none is shown.';
+  out.push(c);
+
+  /* 1b. is the live price feed still alive, and do exchanges agree? */
+  if(API.online){
+    var mAge=ageOf(d,'market');
+    if(d && d.market && mAge!=null && mAge>MARKET_STALE){
+      out.push({id:'fresh', s:'warn', title:'Live prices have stopped updating',
+        msg:'The last '+exn+' price update was '+ago(mAge)+'. Funding and any price-based alerts may be out of date until the feed recovers.',
+        val:ago(mAge), why:'The server refreshes prices every 15 seconds. If they stop, something between the server and the exchange is failing.'});
+    }
+    var sp=SPREAD[coin];
+    if(sp && sp.mismatch){
+      out.push({id:'spread', s:'warn', title:'Exchanges disagree on the price',
+        msg:'Mark prices for '+coin+' differ by '+nf(sp.pct,1)+'% between exchanges. Perpetual prices normally sit within a fraction of a percent, so one exchange may list a different contract (for example a 1000× version). Check the contract before trading.',
+        val:nf(sp.pct,1)+'% apart', why:'Mismatched contract sizes are a common way to size a trade wrongly. Confirm the contract on each exchange.'});
+    }
+  }
+
+  /* 2. liquidation vs stop */
+  if(!r.sel.missing){
+    c={id:'liq', title:'Stop-loss comes before liquidation'};
+    if(r.sel.immediate){
+      c.s='bad'; c.title='Liquidated as soon as the trade opens';
+      c.msg='At '+nf(r.lev,0)+'× your margin is already below the maintenance requirement '+exn+' applies to a position this size, so you would be liquidated immediately (or the order rejected). Lower your leverage or position size.';
+      c.val='Immediate';
+    } else if(r.sel.none){
+      c.s='ok'; c.msg='At '+nf(r.lev,0)+'× leverage, price would have to move almost to zero before '+exn+' liquidates you.';
+      c.val='No realistic liquidation';
+    } else if(r.gap<=0){
+      c.s='bad'; c.title='Liquidation comes before your stop-loss';
+      c.msg='At '+nf(r.lev,0)+'× you would be liquidated at '+px(r.sel.price)+', before your stop-loss at '+px(r.SL)+'. The stop would never get a chance to work.';
+      c.val='Liq '+px(r.sel.price);
+    } else if(r.ratio<2){
+      c.s='warn'; c.title='Liquidation is close to your stop-loss';
+      c.msg='Liquidation sits only '+nf(r.ratio,1)+'× your stop distance away. A fast move or slippage could skip past your stop and hit liquidation.';
+      c.val=nf(r.ratio,1)+'× stop distance';
+    } else {
+      c.s='ok'; c.msg='Liquidation at '+px(r.sel.price)+' is '+nf(r.ratio,1)+'× further away than your stop-loss, so your stop has room to work.';
+      c.val=nf(r.ratio,1)+'× stop distance';
+    }
+    c.why='Your stop-loss is your planned exit. Liquidation is the exchange forcing you out and charging extra fees. You want the stop to trigger first, with a comfortable gap.';
+    out.push(c);
+  }
+
+  /* 3. leverage cap (only when the exchange limit is known) */
+  if(isFinite(r.sel.maxLev) && r.lev>r.sel.maxLev){
+    out.push({id:'levcap', s:'bad', title:'Leverage above the exchange limit',
+      msg:exn+' allows at most '+nf(r.sel.maxLev,0)+'× for a position of this size. Lower your leverage or position size.',
+      val:'Max '+nf(r.sel.maxLev,0)+'×',
+      why:'Exchanges cap leverage as positions grow. An order above the cap is rejected or the leverage is reduced automatically.'});
+  }
+
+  /* 4. risk per trade */
+  c={id:'risk', title:'Risk per trade'};
+  c.msg='If your stop-loss hits you lose about '+usd(r.riskAmt)+' ('+nf(r.riskPct,2)+'% of your balance), including fees.';
+  if(r.riskPct>5){c.s='bad'; c.msg+=' That is a large loss to take on one trade.';}
+  else if(r.riskPct>2){c.s='warn'; c.msg+=' Many traders keep this at 1–2%.';}
+  else c.s='ok';
+  c.val=nf(r.riskPct,2)+'% of balance';
+  c.why='A string of losses is normal. Keeping each loss small means a bad week does not end your account.';
+  out.push(c);
+
+  /* 5. margin used */
+  c={id:'margin', title:'Margin used'};
+  c.msg='This trade locks up '+usd(r.margin)+' ('+nf(r.marginPct,0)+'% of your balance) as margin.';
+  if(r.marginPct>100){c.s='bad'; c.msg+=' That is more than you have. Lower the size, or raise leverage.';}
+  else if(r.marginPct>50){c.s='warn'; c.msg+=' Little is left to absorb other trades or add margin.';}
+  else c.s='ok';
+  c.val=nf(r.marginPct,0)+'% of balance';
+  c.why='Margin is the collateral held against the trade. If it takes most of your balance, you cannot open other positions or top up this one.';
+  out.push(c);
+
+  /* 6. reward vs risk */
+  c={id:'rr', title:'Reward versus risk'};
+  c.msg='If your take-profit hits you make about '+usd(r.gainTP)+' after fees, which is '+nf(r.rr,2)+'× what you risk.';
+  if(r.rr<1){c.s='bad'; c.msg+=' You risk more than you can gain.';}
+  else if(r.rr<1.5){c.s='warn'; c.msg+=' Thin: you need to win most trades for this to pay off.';}
+  else c.s='ok';
+  c.val='Net '+nf(r.rr,2)+' : 1';
+  c.why='If a trade risks $1 to make $0.50, you must win two out of three trades just to break even. Better ratios give you room to be wrong.';
+  out.push(c);
+
+  /* 7. funding */
+  c={id:'fund', title:'Funding cost while you hold'};
+  var live=(mk(S.ex)&&!S.fundingTouched);
+  if(!isFinite(r.fundCost)){
+    c.s='warn'; c.msg='No funding rate yet, so funding cost is left out. Enter the current rate in Pro mode, or connect live data.'; c.val='Not included';
+  } else if(r.fundCost>0){
+    var p=r.fundCost/r.riskAmt*100;
+    c.msg='Holding '+nf(r.hold,0)+'h at '+nf(r.fundRate,3)+'% per 8h'+(live?' (live rate)':'')+' would cost about '+usd(r.fundCost)+' in funding ('+nf(p,0)+'% of what you risk).';
+    c.s = p>50?'bad':p>20?'warn':'ok';
+    c.val='−'+usd(r.fundCost);
+  } else {
+    c.s='ok';
+    c.msg='At '+nf(r.fundRate,3)+'% per 8h'+(live?' (live rate)':'')+' you would '+(r.fundCost<0?'receive about '+usd(r.fundCost)+' in funding':'pay no funding')+' over '+nf(r.hold,0)+'h.';
+    c.val=r.fundCost<0?'+'+usd(r.fundCost):'None';
+  }
+  c.why='Perpetual contracts charge or pay funding every few hours to keep price near spot. On long holds it can quietly eat your margin. Some coins settle funding more often than every 8 hours.';
+  out.push(c);
+
+  /* 8. scheduled events (official schedule) */
+  c={id:'events', title:'Scheduled US releases during your hold'};
+  var holdMs=r.hold*H, hits=[], endAt=now+holdMs;
+  EVENTS.forEach(function(ev){ var rem=ev.at-now; if(rem>=0 && rem<=holdMs) hits.push({ev:ev, rem:rem}); });
+  hits.sort(function(a,b){return a.rem-b.rem;});
+  var high=hits.filter(function(h){return h.ev.imp==='High';});
+  if(endAt>scheduleEnd()){
+    c.s='warn'; c.msg='The release schedule in this tool ends in December 2026, so part of your holding time is not covered.'; c.val='Schedule ends';
+  } else if(high.length){
+    var h0=high[0];
+    c.s='warn';
+    c.msg=h0.ev.n+' is due in '+dur(h0.rem)+' ('+whenStr(h0.ev.at)+'), inside your hold.'+(h0.rem<=60*60e3?' That is within the hour.':'')+' Prices often move fast around releases like this, and stops can be hit by the swing. Consider a smaller size, or waiting until it has passed.';
+    if(hits.length>1) c.msg+=' ('+(hits.length-1)+' other release'+(hits.length>2?'s':'')+' also fall in your hold.)';
+    c.val=dur(h0.rem)+' away';
+  } else if(hits.length){
+    c.s='ok'; c.msg='Only lower-impact releases fall in your hold: '+hits[0].ev.n+' in '+dur(hits[0].rem)+'.'; c.val=hits.length+' minor';
+  } else {
+    c.s='ok'; c.msg='No scheduled US inflation, jobs or Fed releases fall inside your holding time.'; c.val='None';
+  }
+  c.why='Inflation data, jobs reports and Fed decisions often cause fast, two-way moves across markets, including crypto. Tight stops get hit and spreads widen. This covers scheduled US releases only, not crypto-specific events or surprise news.';
+  out.push(c);
+
+  var rank={bad:0,warn:1,ok:2};
+  out.sort(function(a,b){return rank[a.s]-rank[b.s];});
+  return out;
+}
+
+/* ---------- rendering ---------- */
+var ICON={
+  ok:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg>',
+  warn:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M8 3.5v5.5"/><circle cx="8" cy="12.2" r=".6" fill="currentColor"/></svg>',
+  bad:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>'
+};
+var TAG={ok:'Fine',warn:'Review',bad:'Fix'};
+
+function renderStrip(){
+  var el=$('dataStrip'); if(!el) return;
+  if(API.online===null){ el.innerHTML='<span>Checking for live data…</span>'; return; }
+  if(!API.online){
+    el.innerHTML='<span class="badge demo">Not connected</span><span>No live exchange data here. Rates, prices and funding come only from what you type from the exchange. The release schedule is the built-in one.</span>'+
+      '<details><summary>How to connect live data</summary><p>This page cannot reach exchange servers on its own. Run the Trade check server (see the README) and open the page from it. The server then refreshes everything automatically: prices and funding every 15 seconds, maintenance rates every 30 minutes, and the release calendar every 6 hours, and it pushes each update to this page. Binance publishes its rates only to signed requests, so that one needs a read-only API key on your server.</p></details>';
+    return;
+  }
+  var coin=coinSym(), html='<div class="ds-group">';
+  EXKEYS.forEach(function(ex){
+    var d=DATA[ex+'|'+coin], name=EX[ex].name;
+    if(!d){ html+='<span class="badge">'+name+' · loading…</span>'; return; }
+    var tAge=ageOf(d,'tiers'), mAge=ageOf(d,'market');
+    var t = d.tiers ? ((tAge>TIERS_STALE)?'rates stale ('+ago(tAge)+')':'rates '+ago(tAge))
+          : (d.errors && d.errors.tiers==='needs_api_key' ? 'rates need API key' : 'rates unavailable');
+    var m = d.market ? ((mAge>MARKET_STALE)?'prices stale ('+ago(mAge)+')':'prices '+ago(mAge)) : 'prices unavailable';
+    var ok = d.tiers && d.market && tAge<=TIERS_STALE && mAge<=MARKET_STALE;
+    html+='<span class="badge '+(ok?'live':'demo')+'">'+name+' · '+t+' · '+m+'</span>';
+  });
+  var src=EVENT_INFO.sources, bls=src&&src['bls-feed'];
+  html+='<span class="badge '+((bls&&bls.ok)?'live':'')+'">Calendar · '+(bls&&bls.ok?'official feed + built-in':'built-in schedule')+'</span>';
+  html+='</div><span class="stamp">'+(API.mode==='stream'?'Live stream':API.mode==='poll'?'Updating every 15 s':API.mode==='reconnecting'?'Reconnecting…':'')+'</span><button type="button" class="mini-btn" id="refreshBtn">Refresh now</button>';
+  if(API.degraded && API.degraded.length){
+    html+='<details open><summary>'+API.degraded.length+' data issue'+(API.degraded.length>1?'s':'')+' on the server</summary><p>'+API.degraded.map(esc).join('<br>')+'</p></details>';
+  }
+  el.innerHTML=html;
+}
+
+function renderVerdict(r, checks){
+  var el=$('verdict');
+  if(!r.valid){
+    el.className='verdict s-idle';
+    el.innerHTML='<div><h2>'+(/must be/.test(r.reason)?'Check your prices':'Enter your plan')+'</h2><p class="lead">'+esc(r.reason)+'</p></div><div></div>';
+    return;
+  }
+  var bad=checks.filter(function(c){return c.s==='bad';}), warn=checks.filter(function(c){return c.s==='warn';});
+  var cls, head, lead;
+  if(bad.length){ cls='s-bad'; head=bad.length+' problem'+(bad.length>1?'s':'')+' to fix before you trade'; lead=bad[0].msg; }
+  else if(warn.length){ cls='s-warn'; head=warn.length+' thing'+(warn.length>1?'s':'')+' to review before you trade'; lead=warn[0].msg; }
+  else { cls='s-ok'; head='No red flags in this plan'; lead='The maths and timing hold up. That says nothing about where price will go.'; }
+  el.className='verdict '+cls;
+  var sel=r.sel, exn=EX[S.ex].name;
+  var liqTxt = sel.missing?'Not loaded':(sel.immediate?'Immediately':(sel.none?'None':px(sel.price)));
+  var liqSub = (sel.missing||sel.none||sel.immediate)?'':' <small>'+sgnPct((sel.price-r.E)/r.E*100)+'</small>';
+  var stats=
+    '<div><dt>Size to enter</dt><dd>'+qf(r.qty)+' <small>'+coinSym()+'</small></dd></div>'+
+    '<div><dt>Margin needed</dt><dd>'+usd(r.margin)+'</dd></div>'+
+    '<div><dt>If stop-loss hits</dt><dd>−'+usd(r.riskAmt)+'</dd></div>'+
+    '<div><dt>If take-profit hits</dt><dd>+'+usd(r.gainTP)+'</dd></div>'+
+    '<div><dt>Liquidation on '+exn+'</dt><dd>'+liqTxt+liqSub+'</dd></div>'+
+    '<div class="pro-only"><dt>Position value</dt><dd>'+usd(r.notional)+'</dd></div>'+
+    '<div class="pro-only"><dt>Net reward : risk</dt><dd>'+nf(r.rr,2)+' : 1</dd></div>'+
+    '<div class="pro-only"><dt>Fees if stop hits</dt><dd>'+usd(r.perEx[S.ex].fee)+'</dd></div>';
+  el.innerHTML='<div><h2>'+head+'</h2><p class="lead">'+esc(lead)+'</p><p class="fine">Checks your plan, not the market. Size is set so a stop-loss hit costs your chosen risk.</p></div><dl class="stats">'+stats+'</dl>';
+}
+
+function renderChecks(r, checks){
+  var el=$('checks');
+  if(!r.valid){ el.innerHTML='<li class="empty">Checks appear once your plan is complete.</li>'; return; }
+  el.innerHTML=checks.map(function(c){
+    return '<li class="check s-'+c.s+'">'+
+      '<span class="ico">'+ICON[c.s]+'</span>'+
+      '<h3>'+esc(c.title)+'<span class="tag">'+TAG[c.s]+'</span></h3>'+
+      '<span class="val pro-only">'+esc(c.val)+'</span>'+
+      '<p class="msg">'+esc(c.msg)+'</p>'+
+      '<details class="simple-only"><summary>Why this matters</summary><p>'+esc(c.why)+'</p></details>'+
+    '</li>';
+  }).join('');
+}
+
+function renderLadder(r){
+  var el=$('ladder');
+  if(!r.valid){ el.innerHTML='<p class="empty">Complete your plan to see the ladder.</p>'; return; }
+  var W=360,H_=440,top=22,bot=418,bx=110,bw=30;
+  var sel=r.sel, E=r.E, items=[], haveLiq=!(sel.none||sel.missing||sel.immediate);
+  function pc(p){return (p-E)/E*100;}
+  items.push({p:r.TP,name:'Take-profit',sub:sgnPct(r.tpPct)+' · +'+usd(r.gainTP),c:'--ok'});
+  items.push({p:E,name:'Entry',sub:S.dir==='long'?'Long':'Short',c:'--ink'});
+  items.push({p:r.SL,name:'Stop-loss',sub:sgnPct(pc(r.SL))+' · −'+usd(r.riskAmt),c:'--warn'});
+  if(haveLiq) items.push({p:sel.price,name:'Liquidation · '+EX[S.ex].name,sub:sgnPct(pc(sel.price))+' from entry',c:'--bad',strong:true});
+  if(S.mode==='pro'){
+    EXKEYS.forEach(function(e){
+      var l=r.liq[e];
+      if(e!==S.ex && !l.none && !l.missing && !l.immediate) items.push({p:l.price,name:EX[e].name+' liquidation',sub:sgnPct(pc(l.price)),c:'--muted',minor:true});
+    });
+  }
+  var prices=items.map(function(i){return i.p;});
+  var mn=Math.min.apply(null,prices), mx=Math.max.apply(null,prices);
+  var pad=(mx-mn)*0.14||mx*0.02; mn-=pad; mx+=pad;
+  function y(p){return top+(mx-p)/(mx-mn)*(bot-top);}
+  var yE=y(E), yTP=y(r.TP), ySL=y(r.SL);
+  var s='';
+  s+='<defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M-1 9L9 -1" stroke="var(--warn)" stroke-width="1.6" opacity=".75"/></pattern></defs>';
+  s+='<rect x="'+bx+'" y="'+top+'" width="'+bw+'" height="'+(bot-top)+'" rx="6" fill="var(--surface-2)"/>';
+  s+='<rect x="'+bx+'" y="'+Math.min(yE,yTP)+'" width="'+bw+'" height="'+Math.abs(yE-yTP)+'" fill="var(--ok-bg)"/>';
+  s+='<rect x="'+bx+'" y="'+Math.min(yE,ySL)+'" width="'+bw+'" height="'+Math.abs(yE-ySL)+'" fill="var(--bad-bg)"/>';
+  if(haveLiq){
+    var yL=y(sel.price);
+    var gTop=Math.min(ySL,yL), gH=Math.abs(ySL-yL);
+    s+='<rect x="'+bx+'" y="'+gTop+'" width="'+bw+'" height="'+gH+'" fill="url(#hatch)"/>';
+    var zTop=r.side===1?yL:top, zH=r.side===1?(bot-yL):(yL-top);
+    s+='<rect x="'+bx+'" y="'+zTop+'" width="'+bw+'" height="'+Math.max(0,zH)+'" fill="var(--bad)" opacity=".35"/>';
+    if(gH>74){
+      s+='<text transform="translate('+(bx+bw/2+4)+','+(gTop+gH/2)+') rotate(-90)" text-anchor="middle" font-size="11" fill="var(--muted)">safety gap</text>';
+    }
+  }
+  items.forEach(function(i){i.y=y(i.p);});
+  items.sort(function(a,b){return a.y-b.y;});
+  var gap=36;
+  items.forEach(function(i,k){ i.ly=i.y; if(k>0) i.ly=Math.max(i.ly, items[k-1].ly+gap); });
+  for(var k=items.length-1;k>=0;k--){
+    var maxY=(k===items.length-1)?H_-16:items[k+1].ly-gap;
+    if(items[k].ly>maxY) items[k].ly=maxY;
+  }
+  items.forEach(function(i){
+    var col='var('+i.c+')', sw=i.minor?1.5:i.strong?3:2.5;
+    s+='<line x1="'+(bx-6)+'" x2="'+(bx+bw+6)+'" y1="'+i.y+'" y2="'+i.y+'" stroke="'+col+'" stroke-width="'+sw+'" stroke-linecap="round"'+(i.minor?' stroke-dasharray="3 3"':'')+'/>';
+    s+='<text x="'+(bx-12)+'" y="'+(i.y+4)+'" text-anchor="end" font-size="12" fill="var(--ink)">'+px(i.p)+'</text>';
+    s+='<path d="M'+(bx+bw+6)+' '+i.y+' L'+(bx+bw+22)+' '+i.y+' L'+(bx+bw+34)+' '+i.ly+'" fill="none" stroke="'+col+'" stroke-width="1" opacity=".7"/>';
+    s+='<text x="'+(bx+bw+40)+'" y="'+(i.ly-1)+'" font-size="'+(i.minor?12:13.5)+'" font-weight="'+(i.minor?500:600)+'" fill="'+(i.minor?'var(--muted)':'var(--ink)')+'">'+i.name+'</text>';
+    s+='<text x="'+(bx+bw+40)+'" y="'+(i.ly+14)+'" font-size="12" fill="var(--muted)">'+i.sub+'</text>';
+  });
+  var desc='Price ladder. Entry '+px(E)+', stop-loss '+px(r.SL)+', take-profit '+px(r.TP)+', '+(sel.missing?'liquidation not calculated because no maintenance rate is loaded':sel.immediate?'liquidated immediately at this leverage':sel.none?'no realistic liquidation':'liquidation '+px(sel.price)+' on '+EX[S.ex].name)+'.';
+  el.innerHTML='<svg viewBox="0 0 '+W+' '+H_+'" role="img" aria-label="'+esc(desc)+'">'+s+'</svg>'+
+    (sel.missing?'<p class="hint" style="text-align:center;margin-top:8px">Liquidation is not drawn because no maintenance rate is loaded.</p>':sel.immediate?'<p class="hint" style="text-align:center;margin-top:8px">Liquidation is not drawn: at this leverage you would be liquidated the moment the trade opens.</p>':'');
+}
+
+function renderCompare(r){
+  var el=$('compare');
+  if(!r.valid){ el.innerHTML='<p class="empty">Appears once your plan is complete.</p>'; return; }
+  var head='<tr><th scope="col"><span class="vh">Measure</span></th>'+EXKEYS.map(function(e){
+    return '<th scope="col" class="'+(e===S.ex?'sel':'')+'"><button type="button" data-pick="'+e+'"'+(e===S.ex?' aria-current="true"':'')+'>'+EX[e].name+'</button></th>';
+  }).join('')+'</tr>';
+  function row(label,fn,cls){ return '<tr class="'+(cls||'')+'"><th scope="row">'+label+'</th>'+EXKEYS.map(function(e){return '<td class="'+(e===S.ex?'sel':'')+'">'+fn(e)+'</td>';}).join('')+'</tr>'; }
+  var rows=
+    row('Liquidation price',function(e){var l=r.liq[e];return l.missing?'Not loaded':l.immediate?'Immediately':l.none?'None':px(l.price);})+
+    row('Distance from entry',function(e){var l=r.liq[e];return (l.missing||l.none||l.immediate)?'—':nf(Math.abs(l.price-r.E)/r.E*100,2)+'%';})+
+    row('Stop-loss comes first?',function(e){var l=r.liq[e];if(l.missing)return '—';if(l.immediate)return 'No';if(l.none)return 'Yes';return r.side*(r.SL-l.price)>0?'Yes':'No';})+
+    row('Rates used',function(e){return srcLabel(r.liq[e].src);})+
+    row('Maintenance rate',function(e){var l=r.liq[e];return l.missing?'—':nf(l.mmr*100,2)+'%';},'pro-only')+
+    row('Max leverage here',function(e){var l=r.liq[e];return isFinite(l.maxLev)?nf(l.maxLev,0)+'×':'—';},'pro-only')+
+    row('Taker fee',function(e){return nf(r.perEx[e].taker*100,3)+'%';},'pro-only')+
+    row('Fees if stop hits',function(e){return usd(r.perEx[e].fee);},'pro-only');
+  el.innerHTML='<table class="cmp"><thead>'+head+'</thead><tbody>'+rows+'</tbody></table>';
+}
+
+function renderEvents(r){
+  var el=$('events'); if(!el) return;
+  var now=Date.now();
+  var hold=(r&&r.valid)?r.hold:num(S.hold)||0;
+  var upcoming=EVENTS.filter(function(ev){return ev.at>=now;});
+  var html='';
+  if(hold>0){
+    var T=Math.max(hold*1.3,1.5), frac=Math.min(100,hold/T*100), dots='', labels=[];
+    upcoming.forEach(function(ev){
+      var rem=ev.at-now;
+      if(rem/H<=T){
+        dots+='<span class="dot'+(ev.imp==='High'?' hi':'')+'" style="left:'+(rem/H/T*100)+'%" title="'+esc(ev.n+' in '+dur(rem))+'"></span>';
+        labels.push(ev.n+' in '+dur(rem));
+      }
+    });
+    html+='<div class="tl" role="img" aria-label="'+esc('Timeline of your holding window. '+(labels.length?'Releases: '+labels.join('; '):'No scheduled releases in this window'))+'"><div class="track"></div><div class="hold" style="width:'+frac+'%"></div>'+dots+'<span class="tick now">Now</span><span class="tick" style="left:'+frac+'%">Hold ends ('+nf(hold,0)+'h)</span></div>';
+  }
+  if(!upcoming.length){
+    html+='<p class="empty">The release schedule in this tool has ended. It needs updating.</p>';
+  } else {
+    html+='<ul class="evlist">'+upcoming.slice(0,8).map(function(ev){
+      var rem=ev.at-now, inside=hold>0 && rem<=hold*H;
+      return '<li class="ev"><div><div class="n">'+esc(ev.n)+'</div><div class="meta">'+esc(ev.cat)+' · <span class="badge '+(ev.imp==='High'?'hi':'md')+'">'+esc(ev.imp)+' impact</span> · '+whenStr(ev.at)+'</div></div>'+
+        '<div class="when">in '+dur(rem)+'</div>'+
+        (hold>0?'<div style="grid-column:1/-1">'+(inside?'<span class="badge in">Inside your hold</span>':'<span class="badge">After your hold</span>')+'</div>':'')+'</li>';
+    }).join('')+'</ul>';
+  }
+  var info = EVENT_INFO.mode==='server'
+    ? 'Updated automatically from '+((EVENT_INFO.sources&&EVENT_INFO.sources['bls-feed']&&EVENT_INFO.sources['bls-feed'].ok)?'the official BLS calendar feed plus the built-in Fed and PCE schedule.':'the built-in schedule (the BLS feed is not reachable right now).')
+    : 'Built-in schedule, checked 6 Oct 2026.';
+  if(EVENT_INFO.needsUpdate) info+=' <strong>The schedule is running out and needs updating.</strong>';
+  el.innerHTML=html+'<p class="hint">'+info+'</p>';
+}
+
+function renderSuggest(r){
+  var btn=$('sugBtn'), hint=$('sugHint');
+  btn.hidden=true;
+  if(!r.valid){ hint.textContent=''; return; }
+  if(r.maxLev==null){ hint.textContent='A leverage suggestion needs the maintenance rate. Add it below or connect live data.'; return; }
+  var t='';
+  if(r.maxLev<1){ t='Your stop-loss is so tight relative to the exchange margin rules that no leverage keeps liquidation 2× your stop distance away.'; }
+  else if(r.sug==null){ t='Even at '+r.maxLev+'×, this size would use over half your balance. Consider a smaller risk or a wider-spaced plan.'; }
+  else {
+    btn.hidden=false; btn.textContent='Use '+r.sug+'×'; btn.setAttribute('data-lev',r.sug);
+    t='Up to '+r.maxLev+'× keeps liquidation at least 2× your stop distance away'+(r.minLev>1?'; at least '+r.minLev+'× keeps margin under half your balance.':'.');
+  }
+  hint.textContent=t;
+}
+
+function renderSide(r){
+  var m=mk(S.ex), mb=$('markBtn');
+  if(m && m.mark>0){ mb.hidden=false; mb.textContent='Use live '+EX[S.ex].name+' mark price: '+px(m.mark); mb.setAttribute('data-mark',m.mark); }
+  else { mb.hidden=true; }
+
+  var coin=coinSym(), need=!!coin && !hasRates(S.ex), live=!!tierSet(S.ex);
+  $('mmrField').classList.toggle('need', need);
+  $('mmr').placeholder = need ? 'Required for '+coin : (live ? 'Auto (live rate)' : '');
+  $('mmrHint').textContent = need
+    ? 'Needed: no rate is loaded for '+coin+' on '+EX[S.ex].name+'. Copy it from the exchange\'s trading rules for your position size. Without it no liquidation price is shown.'
+    : (live ? 'Leave blank to use the live rate. Enter a value to override it.' : 'Your rate is being used. Copy it from the exchange\'s trading rules for your position size.');
+
+  $('fundHint').textContent = (m && isFinite(m.funding))
+    ? 'Live on '+EX[S.ex].name+': '+nf(m.funding,4)+'% per funding interval. This tool assumes 8-hour intervals; some coins use shorter ones.'
+    : 'Positive: longs pay shorts. Copy the current rate from the exchange.';
+}
+
+/* ---------- market context (live) ---------- */
+function renderContext(){
+  var panel=$('contextPanel'); if(!panel) return;
+  var coin=coinSym();
+  if(!API.online || !coin){ panel.hidden=true; return; }
+  panel.hidden=false;
+  var rows=EXKEYS.map(function(ex){
+    var d=DATA[ex+'|'+coin], m=d&&d.market;
+    if(!m) return '<tr><th scope="row">'+EX[ex].name+'</th><td>—</td><td>—</td><td>'+(d?'unavailable':'loading…')+'</td></tr>';
+    var a=ageOf(d,'market'), stale=a>MARKET_STALE;
+    return '<tr><th scope="row">'+EX[ex].name+'</th><td>'+px(m.mark)+'</td><td>'+(isFinite(m.funding)?nf(m.funding,4)+'%':'—')+'</td><td'+(stale?' class="warn-text"':'')+'>'+ago(a)+(stale?' (stale)':'')+'</td></tr>';
+  }).join('');
+  var sp=SPREAD[coin]||{}, note='';
+  if(sp.mismatch) note='<p class="hint warn-text">Prices differ by '+nf(sp.pct,1)+'% between exchanges. Check you are looking at the same contract on each.</p>';
+  else if(isFinite(sp.pct)) note='<p class="hint">Exchanges agree to within '+nf(sp.pct,2)+'%.</p>';
+  $('context').innerHTML='<div class="scroll"><table class="cmp"><thead><tr><th scope="col"><span class="vh">Exchange</span></th><th scope="col">Mark price</th><th scope="col">Funding per interval</th><th scope="col">Updated</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+note+
+    '<p class="hint">Positive funding means longs pay shorts; negative means shorts pay longs. Sources: Binance premiumIndex, Bybit tickers, OKX mark-price and funding-rate.</p>';
+}
+
+/* ---------- alerts and trade watch ---------- */
+var ALERTS = [], WATCH = null, fired = {};
+function pushAlert(a){
+  var text=String(a.text||''); if(!text) return;
+  if(ALERTS.some(function(x){return x.text===text && Date.now()-x.at<60000;})) return;
+  ALERTS.unshift({type:String(a.type||'info').replace(/[^a-z]/gi,'').toLowerCase()||'info', text:text, at:Date.now()});
+  ALERTS=ALERTS.slice(0,6);
+  renderAlerts();
+  try{
+    if(typeof Notification!=='undefined' && Notification.permission==='granted' && (a.type!=='info')) new Notification('Trade check', {body:text});
+  }catch(e){}
+}
+function renderAlerts(){
+  var el=$('alerts'); if(!el) return;
+  if(!ALERTS.length){ el.innerHTML=''; el.hidden=true; return; }
+  el.hidden=false;
+  el.innerHTML='<ul>'+ALERTS.map(function(a){
+    return '<li class="al al-'+a.type+'"><span>'+esc(a.text)+'</span><time>'+hhmmss(a.at)+'</time></li>';
+  }).join('')+'</ul><button type="button" class="link-btn" id="clearAlerts">Clear alerts</button>';
+}
+function renderWatch(r){
+  var el=$('watchBar'); if(!el) return;
+  if(WATCH){
+    el.innerHTML='<span class="badge live">Watching '+WATCH.coin+' on '+EX[WATCH.ex].name+'</span><span class="hint" style="margin:0">Alerts when price nears or reaches your stop-loss, take-profit or liquidation, and before big releases. Works while this page stays open.</span><button type="button" class="mini-btn" id="unwatchBtn">Stop watching</button>';
+    return;
+  }
+  if(r && r.valid && API.online){
+    el.innerHTML='<button type="button" class="mini-btn" id="watchBtn">Watch this trade</button><span class="hint" style="margin:0">Get alerts as the plan plays out, using the live mark price.</span>';
+  } else el.innerHTML='';
+}
+function startWatch(){
+  var r=calc(); if(!r.valid||!API.online) return;
+  WATCH={coin:coinSym(), ex:S.ex, side:r.side, E:r.E, SL:r.SL, TP:r.TP, d:r.d,
+    liq:(r.sel.missing||r.sel.none||r.sel.immediate)?null:r.sel.price};
+  WATCH.liqDist = WATCH.liq==null ? null : Math.abs(r.E-WATCH.liq);
+  fired={};
+  try{ if(typeof Notification!=='undefined' && Notification.permission==='default') Notification.requestPermission(); }catch(e){}
+  pushAlert({type:'info', text:'Watching your '+WATCH.coin+' '+S.dir+' on '+EX[WATCH.ex].name+' using the live mark price.'});
+  renderWatch(r); evaluateWatch();
+}
+function stopWatch(){ WATCH=null; fired={}; renderWatch(calc()); }
+function fire(key, type, text){ if(fired[key]) return; fired[key]=true; pushAlert({type:type, text:text}); }
+function evaluateWatch(){
+  if(!WATCH) return;
+  var d=DATA[WATCH.ex+'|'+WATCH.coin], name=EX[WATCH.ex].name;
+  var age=ageOf(d,'market');
+  if(!d || !d.market || age==null || age>120e3){
+    fire('stale','warn','Live '+name+' prices have stopped updating, so price alerts are paused.');
+    return;
+  }
+  fired.stale=false;
+  var mark=d.market.mark, side=WATCH.side;
+  var against=(WATCH.E-mark)*side;            /* positive when price moves against you */
+  var stopFrac=against/WATCH.d;
+  if(stopFrac>=1) fire('stop','bad','Price ('+px(mark)+') has reached your stop-loss at '+px(WATCH.SL)+'.');
+  else if(stopFrac>=0.75) fire('nearstop','warn','Price ('+px(mark)+') is close to your stop-loss at '+px(WATCH.SL)+'.');
+  var tpDist=Math.abs(WATCH.TP-WATCH.E), prog=(mark-WATCH.E)*side/tpDist;
+  if(prog>=1) fire('tp','ok','Price ('+px(mark)+') has reached your take-profit at '+px(WATCH.TP)+'.');
+  else if(prog>=0.75) fire('neartp','ok','Price ('+px(mark)+') is close to your take-profit at '+px(WATCH.TP)+'.');
+  if(WATCH.liq!=null){
+    var lf=against/WATCH.liqDist;
+    if(lf>=1) fire('liq','bad','Price ('+px(mark)+') has reached your liquidation level at '+px(WATCH.liq)+'.');
+    else if(lf>=0.75) fire('nearliq','bad','Price ('+px(mark)+') is close to your liquidation level at '+px(WATCH.liq)+'.');
+  }
+  var now=Date.now();
+  EVENTS.forEach(function(ev){
+    var rem=ev.at-now;
+    if(ev.imp==='High' && rem>0 && rem<=30*60e3) fire('ev'+ev.at,'warn',ev.n+' is due in '+dur(rem)+'. Prices often move fast around releases like this.');
+  });
+}
+
+/* ---------- sync controls ---------- */
+function syncInputs(){
+  $('coin').value=S.coin; $('coinOther').value=S.coinOther||''; $('coinOther').hidden=(S.coin!=='OTHER');
+  $('balance').value=S.balance; $('riskPct').value=S.riskPct; $('riskRange').value=Math.min(10,Math.max(0.25,num(S.riskPct)||1));
+  $('entry').value=S.entry; $('stop').value=S.stop; $('tp').value=S.tp;
+  $('lev').value=S.lev; $('levRange').value=Math.min(100,Math.max(1,num(S.lev)||1));
+  $('holdNum').value=S.hold; $('funding').value=S.funding; $('order').value=S.order;
+  syncFees(); syncMmr(); syncHoldSel(); syncSegs();
+}
+function syncFees(){ var f=S.fees[S.ex]; $('takerFee').value=f.taker; $('makerFee').value=f.maker; }
+function syncMmr(){ var o=S.mmrBy[S.ex]||{}; $('mmr').value=o.rate==null?'':o.rate; $('mmrCum').value=o.cum==null?'':o.cum; }
+var HOLDS=[[1,'1 hour'],[4,'4 hours'],[8,'8 hours'],[24,'1 day'],[72,'3 days']];
+function syncHoldSel(){
+  var sel=$('holdSel'), h=num(S.hold), opts=HOLDS.slice();
+  if(isFinite(h) && !opts.some(function(o){return o[0]===h;})) opts.push([h,'Custom ('+nf(h,0)+' hours)']);
+  sel.innerHTML='<option value=""'+(isFinite(h)?'':' selected')+'>Choose…</option>'+opts.map(function(o){return '<option value="'+o[0]+'"'+(o[0]===h?' selected':'')+'>'+o[1]+'</option>';}).join('');
+}
+function syncSegs(){
+  document.body.dataset.mode=S.mode;
+  [].forEach.call(document.querySelectorAll('#exSeg button'),function(b){b.setAttribute('aria-pressed',b.dataset.ex===S.ex);});
+  [].forEach.call(document.querySelectorAll('#modeSeg button'),function(b){b.setAttribute('aria-pressed',b.dataset.mode===S.mode);});
+  [].forEach.call(document.querySelectorAll('#dirSeg button'),function(b){b.setAttribute('aria-pressed',b.dataset.dir===S.dir);});
+}
+
+function update(){
+  var r=calc();
+  var checks=r.valid?evalChecks(r):[];
+  renderStrip(); renderVerdict(r,checks); renderWatch(r); renderChecks(r,checks); renderLadder(r); renderCompare(r); renderContext(); renderEvents(r); renderSuggest(r); renderSide(r); evaluateWatch();
+  save();
+}
+
+/* ---------- events ---------- */
+function bindNum(id,key,manualPrice){
+  $(id).addEventListener('input',function(){
+    S[key]=num(this.value);
+    if(manualPrice) S.autoPrices=false;
+    if(key==='funding') S.fundingTouched=true;
+    if(key==='riskPct'&&isFinite(S[key])) $('riskRange').value=S[key];
+    if(key==='lev'&&isFinite(S[key])) $('levRange').value=S[key];
+    if(key==='hold') syncHoldSel();
+    update();
+  });
+}
+['balance','funding'].forEach(function(k){bindNum(k,k);});
+['entry','stop','tp'].forEach(function(k){bindNum(k,k,true);});
+bindNum('riskPct','riskPct'); bindNum('lev','lev'); bindNum('holdNum','hold');
+$('riskRange').addEventListener('input',function(){S.riskPct=num(this.value);$('riskPct').value=S.riskPct;update();});
+$('levRange').addEventListener('input',function(){S.lev=num(this.value);$('lev').value=S.lev;update();});
+$('holdSel').addEventListener('change',function(){S.hold=num(this.value);$('holdNum').value=isFinite(S.hold)?S.hold:'';update();});
+$('order').addEventListener('change',function(){S.order=this.value;update();});
+$('mmr').addEventListener('input',function(){S.mmrBy[S.ex].rate=this.value;update();});
+$('mmrCum').addEventListener('input',function(){S.mmrBy[S.ex].cum=this.value;update();});
+$('takerFee').addEventListener('input',function(){S.fees[S.ex].taker=num(this.value);update();});
+$('makerFee').addEventListener('input',function(){S.fees[S.ex].maker=num(this.value);update();});
+$('sugBtn').addEventListener('click',function(){var v=num(this.getAttribute('data-lev'));if(v){S.lev=v;$('lev').value=v;$('levRange').value=v;update();}});
+$('markBtn').addEventListener('click',function(){var v=num(this.getAttribute('data-mark'));if(v>0){setPrices(v);S.autoPrices=false;update();}});
+$('resetBtn').addEventListener('click',function(){var m=S.mode,e=S.ex;S=clone(BLANK);S.mode=m;S.ex=e;S.autoPrices=false;syncInputs();applyLive();update();});
+
+function onCoinChange(){
+  S.autoPrices=true; S.fundingTouched=false; S.funding=''; if(WATCH) stopWatch();
+  EXKEYS.forEach(function(e){S.mmrBy[e]={rate:'',cum:''};});
+  $('funding').value=''; syncMmr();
+  $('coinOther').hidden=(S.coin!=='OTHER');
+  refreshData();
+}
+$('coin').addEventListener('change',function(){S.coin=this.value;onCoinChange();if(S.coin==='OTHER')$('coinOther').focus();});
+var coinTimer=null;
+$('coinOther').addEventListener('input',function(){
+  this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  S.coinOther=this.value; S.autoPrices=true;
+  clearTimeout(coinTimer); coinTimer=setTimeout(function(){ if(coinSym().length>=2) refreshData(); else update(); },500);
+  update();
+});
+
+function setEx(e){ S.ex=e; syncFees(); syncMmr(); syncSegs(); applyLive(); update(); }
+$('exSeg').addEventListener('click',function(ev){var b=ev.target.closest('button');if(b)setEx(b.dataset.ex);});
+$('modeSeg').addEventListener('click',function(ev){var b=ev.target.closest('button');if(b){S.mode=b.dataset.mode;syncSegs();update();}});
+$('dirSeg').addEventListener('click',function(ev){var b=ev.target.closest('button');if(b){S.dir=b.dataset.dir;syncSegs();update();}});
+$('compare').addEventListener('click',function(ev){var b=ev.target.closest('button[data-pick]');if(b)setEx(b.dataset.pick);});
+$('dataStrip').addEventListener('click',function(ev){if(ev.target.id==='refreshBtn') refreshData(true);});
+$('watchBar').addEventListener('click',function(ev){ if(ev.target.id==='watchBtn') startWatch(); if(ev.target.id==='unwatchBtn') stopWatch(); });
+$('alerts').addEventListener('click',function(ev){ if(ev.target.id==='clearAlerts'){ ALERTS=[]; renderAlerts(); } });
+
+syncInputs();
+update();
+probe().then(function(){
+  if(API.online && !S.entry && !S.stop && !S.tp) S.autoPrices=true;   /* first visit: start from the live mark price */
+  renderStrip(); applyLive(); update(); return refreshData();
+});
+setInterval(function(){ renderStrip(); renderContext(); evaluateWatch(); },5000);
+setInterval(function(){ update(); },30000);
+})();
+</script>
+</body>
+</html>

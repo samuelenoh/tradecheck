@@ -1,0 +1,26 @@
+# docker compose up -d
+# Restarts on its own after a crash or reboot, and keeps its saved data in a volume.
+# Put your settings in a file named .env next to this one (see DEPLOY.md), for example:
+#   ACCESS_PASSWORD=choose-a-long-password
+services:
+  tradecheck:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8787:8787"
+    volumes:
+      - tradecheck-data:/data
+    environment:
+      # Strongly advised for anything reachable from the internet (at least 10 characters).
+      ACCESS_PASSWORD: ${ACCESS_PASSWORD:-}
+      ACCESS_USER: ${ACCESS_USER:-trader}
+      # Optional. Leave blank to run on public data only.
+      BINANCE_API_KEY: ${BINANCE_API_KEY:-}
+      BINANCE_API_SECRET: ${BINANCE_API_SECRET:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      # Set to 0 if you expose port 8787 directly with no proxy in front of it.
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      HTTP_USER_AGENT: "${HTTP_USER_AGENT:-tradecheck/1.0 (self-hosted, contact you@example.com)}"
+volumes:
+  tradecheck-data:

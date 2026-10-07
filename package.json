@@ -1,0 +1,17 @@
+{
+  "name": "tradecheck",
+  "version": "1.0.0",
+  "description": "Futures plan tester with self-updating exchange data",
+  "private": true,
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "jsdom": "^26.0.0"
+  }
+}

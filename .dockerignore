@@ -1,0 +1,9 @@
+.git
+.github
+node_modules
+data
+test
+README.md
+DEPLOY.md
+docker-compose.yml
+.gitignore
